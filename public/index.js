@@ -1,4 +1,4 @@
-(function() {
+(function () {
     /**
      * 生成书籍列表卡片（dom元素）
      * @param {Object} book 书籍相关数据
@@ -48,8 +48,7 @@
     function tip(text) {
         if (text === undefined) {
             document.querySelector('#js-tip').style = 'display: none';
-        }
-        else {
+        } else {
             document.querySelector('#js-tip').innerHTML = text;
             document.querySelector('#js-tip').style = 'display: block';
         }
@@ -63,12 +62,11 @@
         if (isloading) {
             tip();
             document.querySelector('#js-loading').style = 'display: block';
-        }
-        else {
+        } else {
             document.querySelector('#js-loading').style = 'display: none';
         }
     }
-    
+
     /**
      * 根据用户输入结果
      * 使用XMLHttpRequest查询并展示数据列表
@@ -76,8 +74,8 @@
     function queryBook() {
         var input = document.querySelector('#js-search-input');
         var query = input.value;
-        var xhr = new XMLHttpRequest();
         var url = '/book?q=' + query + '&fields=id,title,image,author,publisher,price';
+        var cacheData;
         if (query === '') {
             tip('请输入关键词');
             return;
@@ -85,30 +83,24 @@
         document.querySelector('#js-list').innerHTML = '';
         document.querySelector('#js-thanks').style = 'display: none';
         loading(true);
-        xhr.timeout = 60000;
-        xhr.onreadystatechange = function () {
-            var response = {};
-            if (xhr.readyState === 4 && xhr.status === 200) {
+        var remotePromise = getApiDataRemote(url);
+        getApiDataFromCache(url).then(function (data) {
+            if (data) {
                 loading(false);
-                try {
-                    response = JSON.parse(xhr.responseText);
-                }
-                catch (e) {
-                    response = xhr.responseText;
-                }
-                tip();
-                if (response.books.length === 0) {
-                    tip('无结果');
-                }
-                else {
-                    input.blur();
-                    fillList(response.books);
-                    document.querySelector('#js-thanks').style = 'display: block';
-                }
+                input.blur();            
+                fillList(data.books);
+                document.querySelector('#js-thanks').style = 'display: block';
             }
-        };
-        xhr.open('GET', url, true);
-        xhr.send(null);
+            cacheData = data || {};
+            return remotePromise;
+        }).then(function (data) {
+            if (JSON.stringify(data) !== JSON.stringify(cacheData)) {
+                loading(false);                
+                input.blur();
+                fillList(data.books);
+                document.querySelector('#js-thanks').style = 'display: block';
+            }
+        });
     }
 
     /**
@@ -126,37 +118,151 @@
             queryBook();
         }
     });
-    window.addEventListener('beforeinstallprompt', function(e) {
+    window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
         return false;
-      });
-      // 添加到主屏幕后响应
-window.addEventListener('beforeinstallprompt', function(event) {
-    event.userChoice.then(result => {
-      console.log(result);
-      // {outcome: "dismissed", platform: ""} // 取消添加
-      // {outcome: "accepted", platform: "web"} // 完成添加
     });
-  });
-  
-  // 手动添加，要等到符合规格后才能起效
-  let savedPrompt = null; // 用来保存 事件
-  const btn = document.getElementById('btn');
-  // 添加到主屏幕后响应
-  window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    savedPrompt = e;
-    return false;
-  });
-  btn.addEventListener('click', function() {  
-    if (savedPrompt) {
-      console.log(savedPrompt);
-      // 异步触发横幅显示，弹出选择框，代替浏览器默认动作
-      savedPrompt.prompt();
-      // 接收选择结果
-      savedPrompt.userChoice.then(result => {
-        console.log(result);
-      });
+    // 添加到主屏幕后响应
+    window.addEventListener('beforeinstallprompt', function (event) {
+        event.userChoice.then(result => {
+            console.log(result);
+            // {outcome: "dismissed", platform: ""} // 取消添加
+            // {outcome: "accepted", platform: "web"} // 完成添加
+        });
+    });
+
+    // 手动添加，要等到符合规格后才能起效
+    let savedPrompt = null; // 用来保存 事件
+    const btn = document.getElementById('btn');
+    // 添加到主屏幕后响应
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        savedPrompt = e;
+        return false;
+    });
+    btn.addEventListener('click', function () {
+        if (savedPrompt) {
+            console.log(savedPrompt);
+            // 异步触发横幅显示，弹出选择框，代替浏览器默认动作
+            savedPrompt.prompt();
+            // 接收选择结果
+            savedPrompt.userChoice.then(result => {
+                console.log(result);
+            });
+        }
+    });
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        var publicKey = 'BOEQSjdhorIf8M0XFNlwohK3sTzO9iJwvbYU-fuXRF0tvRpPPMGO6d_gJC_pUQwBT7wD8rKutpNTFHOHN3VqJ0A';
+        // 注册service worker
+        registerServiceWorker('./sw.js').then(function (registration) {
+            console.log('Service Worker 注册成功');
+            // 开启该客户端的消息推送订阅功能
+            return subscribeUserToPush(registration, publicKey);
+        }).then(function (subscription) {
+            // 将生成的客户端订阅信息存储在自己的服务器上
+            return sendSubscriptionToServer(JSON.stringify(subscription));
+        }).then(function (res) {
+            console.log(res);
+        }).catch(function (err) {
+            console.log(err);
+        });
     }
-  });
+    function getApiDataFromCache(url) {
+        if ('caches' in window) {
+            return caches.match(url).then(function (cache) {
+                if (!cache) {
+                    return;
+                }
+                return cache.json();
+            });
+        }
+        else {
+            return Promise.resolve();
+        }
+    }
+
+    function getApiDataRemote(url) {
+        return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.timeout = 60000;
+            xhr.onreadystatechange = function () {
+                var response = {};
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    }
+                    catch (e) {
+                        response = xhr.responseText;
+                    }
+                    resolve(response);
+                }
+                else if (xhr.readyState === 4) {
+                    resolve();
+                }
+            };
+            xhr.onabort = reject;
+            xhr.onerror = reject;
+            xhr.ontimeout = reject;
+            xhr.open('GET', url, true);
+            xhr.send(null);
+        });
+    }
+    function registerServiceWorker(file) {
+        return navigator.serviceWorker.register(file);
+    }
+
+    
+    /**
+     * 用户订阅相关的push信息
+     * 会生成对应的pushSubscription数据，用于标识用户与安全验证
+     * @param {ServiceWorker Registration} registration
+     * @param {string} publicKey 公钥
+     * @return {Promise}
+     */
+    function subscribeUserToPush(registration, publicKey) {
+        var subscribeOptions = {
+            userVisibleOnly: true,
+            applicationServerKey: window.urlBase64ToUint8Array(publicKey)
+        }; 
+        return registration.pushManager.subscribe(subscribeOptions).then(function (pushSubscription) {
+            console.log('Received PushSubscription: ', JSON.stringify(pushSubscription));
+            return pushSubscription;
+        });
+    }
+
+    /**
+     * 将浏览器生成的subscription信息提交到服务端
+     * 服务端保存该信息用于向特定的客户端用户推送
+     * @param {string} body 请求体
+     * @param {string} url 提交的api路径，默认为/subscription
+     * @return {Promise}
+     */
+    function sendSubscriptionToServer(body, url) {
+        url = url || '/subscription';
+        return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.timeout = 60000;
+            xhr.onreadystatechange = function () {
+                var response = {};
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    }
+                    catch (e) {
+                        response = xhr.responseText;
+                    }
+                    resolve(response);
+                }
+                else if (xhr.readyState === 4) {
+                    resolve();
+                }
+            };
+            xhr.onabort = reject;
+            xhr.onerror = reject;
+            xhr.ontimeout = reject;
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(body);
+        });
+    }
 })();
