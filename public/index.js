@@ -160,7 +160,9 @@
             return subscribeUserToPush(registration, publicKey);
         }).then(function (subscription) {
             // 将生成的客户端订阅信息存储在自己的服务器上
-            return sendSubscriptionToServer(JSON.stringify(subscription));
+            var body = {subscription: subscription};
+            body.uniqueid = new Date().getTime();
+            return sendSubscriptionToServer(JSON.stringify(body));
         }).then(function (res) {
             console.log(res);
         }).catch(function (err) {

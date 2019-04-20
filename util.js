@@ -61,6 +61,19 @@ module.exports.findAll = function () {
     });
 };
 
+module.exports.find = function (query) {
+    console.log(query);
+    return new Promise((r, j) => {
+        db.find(query, (err, list) => {
+            if (err) {
+                j(err);
+                return;
+            }
+            r(list);
+        });
+    });
+};
+
 module.exports.remove = function (obj) {
     return new Promise((r, j) => {
         db.remove(obj, {multi: true}, (err, num) => {

@@ -71,6 +71,7 @@ self.addEventListener('activate', function (e) {
 /* ============== */
 // 添加service worker对push的监听
 self.addEventListener('push', function (e) {
+    console.log(e);
     var data = e.data;
     if (e.data) {
         data = data.json();

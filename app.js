@@ -23,7 +23,7 @@ router.get('/book', async (ctx, next) => {
 /* 使用web-push进行消息推送 */
 /* ===================== */
 const options={
-    proxy: 'http://localhost:1087',
+    // proxy: 'http://localhost:8360',
 };
 const vapidKeys = {
     publicKey: 'BOEQSjdhorIf8M0XFNlwohK3sTzO9iJwvbYU-fuXRF0tvRpPPMGO6d_gJC_pUQwBT7wD8rKutpNTFHOHN3VqJ0A',
@@ -52,6 +52,8 @@ router.post('/subscription', koaBody(), async ctx => {
  * @param {*} data 
  */
 function pushMessage(subscription, data = {}) {
+    console.log(subscription)
+    console.log('----------------');
     webpush.sendNotification(subscription, data, options).then(data => {
         console.log('push service的相应数据:', JSON.stringify(data));
         return;
@@ -72,12 +74,12 @@ function pushMessage(subscription, data = {}) {
  * 本例子中，可以直接post一个请求来查看效果
  */
 router.post('/push', koaBody(), async ctx => {
-    let payload = ctx.request.body;    
-    let list = await util.findAll();
+    console.log('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq')
+    let {uniqueid, payload} = ctx.request.body;   
+    let list = uniqueid ? await util.find({uniqueid}) : await util.findAll();
     let status = list.length > 0 ? 0 : -1;
-
     for (let i = 0; i < list.length; i++) {
-        let subscription = list[i];
+        let subscription = list[i].subscription
         pushMessage(subscription, JSON.stringify(payload));
     }
 
