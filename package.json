@@ -25,10 +25,12 @@
   "homepage": "https://github.com/alienzhou/learning-pwa#readme",
   "dependencies": {
     "koa": "^2.5.0",
+    "koa-body": "^4.1.0",
     "koa-router": "^7.4.0",
     "koa-static": "^4.0.2",
     "nedb": "^1.8.0",
-    "request": "^2.85.0"
+    "request": "^2.85.0",
+    "web-push": "^3.3.3"
   },
   "husky": {
     "hooks": {

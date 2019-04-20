@@ -1,4 +1,4 @@
-var cacheName = 'bs-0-2-0';
+var cacheName = 'bs1.0';
 var apiCacheName = 'api-0-1-1';
 var cacheFiles = [
     '/',
@@ -27,6 +27,7 @@ self.addEventListener('fetch', function (e) {
     });
     
     if (needCache) {
+        console.log(1111);
         // 需要缓存
         // 使用fetch请求数据，并将请求结果clone一份缓存到cache
         // 此部分缓存后在browser中使用全局变量caches获取
@@ -38,6 +39,7 @@ self.addEventListener('fetch', function (e) {
         });
     }
     else {
+        console.log(2222);
         // 非api请求，直接查询cache
         // 如果有cache则直接返回，否则通过fetch请求
         e.respondWith(
