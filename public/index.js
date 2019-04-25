@@ -155,6 +155,38 @@
         var publicKey = 'BOEQSjdhorIf8M0XFNlwohK3sTzO9iJwvbYU-fuXRF0tvRpPPMGO6d_gJC_pUQwBT7wD8rKutpNTFHOHN3VqJ0A';
         // 注册service worker
         registerServiceWorker('./sw.js').then(function (registration) {
+            return Promise.all([
+                registration,
+                askPermission()
+            ])
+        }).then(function (result) {
+            var registration = result[0];
+            document.querySelector('#js-notification-btn').addEventListener('click', function () {
+                var title = 'PWA即学即用';
+                var options = {
+                    body: '邀请你一起学习',
+                    icon: '/img/icons/book-128.png',
+                    actions: [{
+                        action: 'show-book',
+                        title: '去看看'
+                    }, {
+                        action: 'contact-me',
+                        title: '联系我'
+                    }],
+                    tag: 'pwa-starter',
+                    renotify: true
+                };
+                var mb = myBrowser();
+                if ("Safari" == mb) {
+                    var notification = new Notification(title, options);
+                    notification.addEventListener('click', function (e) {
+                        document.querySelector('.panel').classList.add('show');
+                    });
+                } else {
+                    registration.showNotification(title, options); 
+                }  
+
+            });
             console.log('Service Worker 注册成功');
             // 开启该客户端的消息推送订阅功能
             return subscribeUserToPush(registration, publicKey);
@@ -167,6 +199,46 @@
             console.log(res);
         }).catch(function (err) {
             console.log(err);
+        });
+    }
+
+    function myBrowser(){
+        var userAgent = navigator.userAgent; //取得浏览器的userAgent字符串
+        var isOpera = userAgent.indexOf("Opera") > -1;
+        if (isOpera) {
+            return "Opera"
+        }; //判断是否Opera浏览器
+        if (userAgent.indexOf("Firefox") > -1) {
+            return "FF";
+        } //判断是否Firefox浏览器
+        if (userAgent.indexOf("Chrome") > -1){
+      return "Chrome";
+     }
+        if (userAgent.indexOf("Safari") > -1) {
+            return "Safari";
+        } //判断是否Safari浏览器
+        if (userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1 && !isOpera) {
+            return "IE";
+        }; //判断是否IE浏览器
+    }
+
+    
+    /* ======= 消息通信 ======= */
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function (e) {
+            var action = e.data;
+            console.log(`receive post-message from sw, action is '${e.data}'`);
+            switch (action) {
+                case 'show-book':
+                    location.href = 'https://book.douban.com/subject/20515024/';
+                    break;
+                case 'contact-me':
+                    location.href = 'mailto:someone@sample.com';
+                    break;
+                default:
+                    document.querySelector('.panel').classList.add('show');
+                    break;
+            }
         });
     }
     function getApiDataFromCache(url) {
@@ -265,6 +337,25 @@
             xhr.open('POST', url, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(body);
+        });
+    }
+
+        /**
+     * 获取用户授权，将
+     */
+    function askPermission() {
+        return new Promise(function (resolve, reject) {
+            var permissionResult = Notification.requestPermission(function (result) {
+                resolve(result);
+            });
+      
+            if (permissionResult) {
+                permissionResult.then(resolve, reject);
+            }
+        }).then(function (permissionResult) {
+            if (permissionResult !== 'granted') {
+                throw new Error('We weren\'t granted permission.');
+            }
         });
     }
 })();

@@ -76,9 +76,90 @@ self.addEventListener('push', function (e) {
     if (e.data) {
         data = data.json();
         console.log('push的数据为：', data);
-        self.registration.showNotification(data.text);        
+        var title = 'PWA即学即用';
+        var options = {
+            body: data.text,
+            icon: '/img/icons/book-128.png',
+            image: '/img/icons/book-521.png', // no effect
+            actions: [{
+                action: 'show-book',
+                title: '去看看'
+            }, {
+                action: 'contact-me',
+                title: '联系我'
+            }],
+            tag: 'pwa-starter',
+            renotify: true
+        };
+        var mb = myBrowser();
+        if ("Safari" == mb) {
+            var notification = new Notification(title, options);
+            notification.addEventListener('click', function (e) {
+                document.querySelector('.panel').classList.add('show');
+            });
+        } else {
+            self.registration.showNotification(title, options);   
+        }     
     } 
     else {
         console.log('push没有任何数据');
     }
+});
+
+function myBrowser(){
+    var userAgent = navigator.userAgent; //取得浏览器的userAgent字符串
+    var isOpera = userAgent.indexOf("Opera") > -1;
+    if (isOpera) {
+        return "Opera"
+    }; //判断是否Opera浏览器
+    if (userAgent.indexOf("Firefox") > -1) {
+        return "FF";
+    } //判断是否Firefox浏览器
+    if (userAgent.indexOf("Chrome") > -1){
+  return "Chrome";
+ }
+    if (userAgent.indexOf("Safari") > -1) {
+        return "Safari";
+    } //判断是否Safari浏览器
+    if (userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1 && !isOpera) {
+        return "IE";
+    }; //判断是否IE浏览器
+}
+
+/* ======================== */
+/* notification demo相关部分 */
+/* ======================= */
+self.addEventListener('notificationclick', function (e) {
+    var action = e.action;
+    console.log(`action tag: ${e.notification.tag}`, `action: ${action}`);
+    
+    switch (action) {
+        case 'show-book':
+            console.log('show-book');
+            break;
+        case 'contact-me':
+            console.log('contact-me');
+            break;
+        default:
+            console.log(`未处理的action: ${e.action}`);
+            action = 'default';
+            break;
+    }
+    e.notification.close();
+
+    e.waitUntil(
+        // 获取所有clients
+        self.clients.matchAll().then(function (clients) {
+            if (!clients || clients.length === 0) {
+                self.clients.openWindow && self.clients.openWindow('http://127.0.0.1:8085');
+                return;
+            }
+            console.log(clients);
+            clients[0].focus && clients[0].focus();
+            clients.forEach(function (client) {
+                // 使用postMessage进行通信
+                client.postMessage(action);
+            });
+        })
+    );
 });
