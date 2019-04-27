@@ -6,3 +6,5 @@ pwa 例子
 - https://blog.csdn.net/mjzhang1993/article/details/79530873
 - https://blog.csdn.net/yanghaolong/article/details/82664362
 - https://segmentfault.com/a/1190000013061924
+- https://segmentfault.com/a/1190000004653475
+- https://www.jianshu.com/p/4fa3bf211785 事件总线

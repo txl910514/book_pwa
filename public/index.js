@@ -87,7 +87,7 @@
         getApiDataFromCache(url).then(function (data) {
             if (data) {
                 loading(false);
-                input.blur();            
+                input.blur();
                 fillList(data.books);
                 document.querySelector('#js-thanks').style = 'display: block';
             }
@@ -95,7 +95,7 @@
             return remotePromise;
         }).then(function (data) {
             if (JSON.stringify(data) !== JSON.stringify(cacheData)) {
-                loading(false);                
+                loading(false);
                 input.blur();
                 fillList(data.books);
                 document.querySelector('#js-thanks').style = 'display: block';
@@ -183,8 +183,8 @@
                         document.querySelector('.panel').classList.add('show');
                     });
                 } else {
-                    registration.showNotification(title, options); 
-                }  
+                    registration.showNotification(title, options);
+                }
 
             });
             console.log('Service Worker 注册成功');
@@ -192,7 +192,9 @@
             return subscribeUserToPush(registration, publicKey);
         }).then(function (subscription) {
             // 将生成的客户端订阅信息存储在自己的服务器上
-            var body = {subscription: subscription};
+            var body = {
+                subscription: subscription
+            };
             body.uniqueid = new Date().getTime();
             return sendSubscriptionToServer(JSON.stringify(body));
         }).then(function (res) {
@@ -202,7 +204,7 @@
         });
     }
 
-    function myBrowser(){
+    function myBrowser() {
         var userAgent = navigator.userAgent; //取得浏览器的userAgent字符串
         var isOpera = userAgent.indexOf("Opera") > -1;
         if (isOpera) {
@@ -211,9 +213,9 @@
         if (userAgent.indexOf("Firefox") > -1) {
             return "FF";
         } //判断是否Firefox浏览器
-        if (userAgent.indexOf("Chrome") > -1){
-      return "Chrome";
-     }
+        if (userAgent.indexOf("Chrome") > -1) {
+            return "Chrome";
+        }
         if (userAgent.indexOf("Safari") > -1) {
             return "Safari";
         } //判断是否Safari浏览器
@@ -222,7 +224,7 @@
         }; //判断是否IE浏览器
     }
 
-    
+
     /* ======= 消息通信 ======= */
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', function (e) {
@@ -241,6 +243,7 @@
             }
         });
     }
+
     function getApiDataFromCache(url) {
         if ('caches' in window) {
             return caches.match(url).then(function (cache) {
@@ -249,8 +252,7 @@
                 }
                 return cache.json();
             });
-        }
-        else {
+        } else {
             return Promise.resolve();
         }
     }
@@ -264,13 +266,11 @@
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     try {
                         response = JSON.parse(xhr.responseText);
-                    }
-                    catch (e) {
+                    } catch (e) {
                         response = xhr.responseText;
                     }
                     resolve(response);
-                }
-                else if (xhr.readyState === 4) {
+                } else if (xhr.readyState === 4) {
                     resolve();
                 }
             };
@@ -281,11 +281,12 @@
             xhr.send(null);
         });
     }
+
     function registerServiceWorker(file) {
         return navigator.serviceWorker.register(file);
     }
 
-    
+
     /**
      * 用户订阅相关的push信息
      * 会生成对应的pushSubscription数据，用于标识用户与安全验证
@@ -297,7 +298,7 @@
         var subscribeOptions = {
             userVisibleOnly: true,
             applicationServerKey: window.urlBase64ToUint8Array(publicKey)
-        }; 
+        };
         return registration.pushManager.subscribe(subscribeOptions).then(function (pushSubscription) {
             console.log('Received PushSubscription: ', JSON.stringify(pushSubscription));
             return pushSubscription;
@@ -321,13 +322,11 @@
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     try {
                         response = JSON.parse(xhr.responseText);
-                    }
-                    catch (e) {
+                    } catch (e) {
                         response = xhr.responseText;
                     }
                     resolve(response);
-                }
-                else if (xhr.readyState === 4) {
+                } else if (xhr.readyState === 4) {
                     resolve();
                 }
             };
@@ -340,7 +339,7 @@
         });
     }
 
-        /**
+    /**
      * 获取用户授权，将
      */
     function askPermission() {
@@ -348,13 +347,123 @@
             var permissionResult = Notification.requestPermission(function (result) {
                 resolve(result);
             });
-      
+
             if (permissionResult) {
                 permissionResult.then(resolve, reject);
             }
         }).then(function (permissionResult) {
             if (permissionResult !== 'granted') {
                 throw new Error('We weren\'t granted permission.');
+            }
+        });
+    }
+
+    /* ========================================== */
+    /*   service worker background sync 相关部分   */
+    /* ========================================== */
+    var STORE_NAME = 'SyncData';
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        // 一个background sync的基础版
+        navigator.serviceWorker.ready.then(function (registration) {
+            var tag = 'sample_sync';
+
+            document.getElementById('js-sync-btn').addEventListener('click', function () {
+                registration.sync.register(tag).then(function () {
+                    console.log('后台同步已触发', tag);
+                    console.log(navigator.serviceWorker);
+                }).catch(function (err) {
+                    console.log('后台同步触发失败', err);
+                });
+            });
+        });
+        // 使用postMessage来传输sync数据
+        navigator.serviceWorker.ready.then(function (registration) {
+            var tag = 'sample_sync_event';
+
+            document.getElementById('js-sync-event-btn').addEventListener('click', function () {
+                registration.sync.register(tag).then(function () {
+                    console.log('后台同步已触发', tag);
+
+                    // 使用postMessage进行数据通信
+                    var inputValue = document.querySelector('#js-search-input').value;
+                    var msg = JSON.stringify({
+                        type: 'bgsync',
+                        msg: {
+                            name: inputValue
+                        }
+                    });
+                    console.log(navigator);
+                    console.log(navigator.serviceWorker);
+                    console.log(navigator.serviceWorker.controller);
+                    navigator.serviceWorker.controller.postMessage(msg);
+                }).catch(function (err) {
+                    console.log('后台同步触发失败', err);
+                });
+            });
+        });
+
+                // 使用indexedDB来传输sync数据
+                navigator.serviceWorker.ready.then(function (registration) {
+                    return Promise.all([
+                        openStore(STORE_NAME),
+                        registration
+                    ]);
+                }).then(function (result) {
+                    var db = result[0];
+                    var registration = result[1];
+                    var tag = 'sample_sync_db';
+        
+                    document.getElementById('js-sync-db-btn').addEventListener('click', function () {
+                        // 将数据存储进indexedDB
+                        var inputValue = document.querySelector('#js-search-input').value;
+                        var tx = db.transaction(STORE_NAME, 'readwrite');
+                        var store = tx.objectStore(STORE_NAME);
+                        var item = {
+                            tag: tag,
+                            name: inputValue
+                        };
+                        store.put(item);
+        
+                        registration.sync.register(tag).then(function () {
+                            console.log('后台同步已触发', tag);
+                        }).catch(function (err) {
+                            console.log('后台同步触发失败', err);
+                        });
+                    });
+                });
+    }
+
+        /**
+     * 连接并打开存储，使用indexedDB
+     * @param {string} storeName 存储的名称
+     * @return {Promise}
+     */
+    function openStore(storeName) {
+        return new Promise(function (resolve, reject) {
+            if (!('indexedDB' in window)) {
+                reject('don\'t support indexedDB');
+            }
+            var request = indexedDB.open('PWA_DB', 1);
+            request.onerror = function(e) {
+                console.log('连接数据库失败');
+                reject(e);
+            }
+            request.onsuccess = function(e) {
+                console.log('连接数据库成功');
+                resolve(e.target.result);
+            }
+            request.onupgradeneeded = function (e) {
+                console.log('数据库版本升级');
+                var db = e.srcElement.result;
+                if (e.oldVersion === 0) {
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        var store = db.createObjectStore(storeName, {
+                            keyPath: 'tag'
+                        });
+                        store.createIndex(storeName + 'Index', 'tag', {unique: false});
+                        console.log('创建索引成功');
+                    }
+                }
             }
         });
     }
