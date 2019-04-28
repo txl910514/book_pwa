@@ -17,6 +17,12 @@
     <meta name="msapplication-square70x70logo" content="img/icons/book-72.png" />
     <meta name="msapplication-square150x150logo" content="img/icons/book-144.png" />
     <meta name="msapplication-square310x310logo" content="img/icons/book-256.png" />
+  <!-- <link rel="prerender" href="http://127.0.0.1:8085/nextpage.html"> -->
+    <!-- <link rel="prefetch" href="./nextpage.html" as="html"> -->
+    <!-- <link rel="prefetch" href="./nextpage.js" as="script"> -->
+    <link rel="preload" href="./nextpage.js" as="script">
+    <script type="text/javascript" src="./current.js"></script>
+    <script type="text/javascript" src="./nextpage.js"></script>
     <title>PWA: 图书搜索</title>
 </head>
 
@@ -33,7 +39,7 @@
     <main>
         <div id="js-loading" class="loading"></div>
         <div id="js-tip" class="tip"></div>
-        <ul class="list" id="js-list"></ul>
+        <ul class="list" id="js-list">xxxx</ul>
         <a id="js-thanks" class="thanks" href="https://developers.douban.com/wiki/?title=guide">- 本Demo基于豆瓣API，感谢豆瓣开放平台
             -</a>
     </main>
@@ -49,6 +55,11 @@
     </section>
     <script type="text/javascript" src="./base64util.js"></script>
     <script type="text/javascript" src="./index.js"></script>
+    <script>
+        document.getElementById('js-list').addEventListener('click', function (e) {
+            location.href = '/nextpage.html'
+        }, false);
+    </script>
 </body>
 
 </html>
